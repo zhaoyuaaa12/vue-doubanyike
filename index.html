@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<!-- 解决防盗链 -->
+	<meta name="referrer" content="never">
+	<title>豆瓣一刻</title>
+	<link rel="shortcut icon" href="./favicon.ico" type="image/x-icon">
+	<link rel="stylesheet" href="./public/css/main-adee3909af.css">
+	
+	<script src="./libs/jquery-a556cfdade.js"></script>
+	<script src="./libs/vue-470a7ab45a.js"></script>
+</head>
+<body>
+	<div class="viewport" id="app">
+		<!-- 侧边导航 -->
+		<div class="navs collapse">
+			<dl>
+				<dt class="login">
+					<div class="avatar">
+						<img src="./public/images/avatar-8844dbfc4d.png" alt="">
+					</div>
+					<span>登录</span>
+				</dt>
+				<dd v-for="nav in navs" v-on:click="togo">
+                    <router-link :to="nav.link" v-bind:class="nav.icon" class="a_css">
+                        <span>{{nav.text}}</span>
+                    </router-link>
+				</dd>
+			</dl>
+			<div class="extra">
+				<a href="javascript:;" class="icon-image">夜晚</a>
+				<a href="javascript:;" class="icon-download">离线</a>
+			</div>
+		</div>
+		<div class="container collapse">
+			<!-- 头部 -->
+			<div class="header">
+				<a href="javascript:;"class="menu icon-menu" v-on:click="togo"></a>
+				<h2>{{title}}</h2>
+				<a href="javascript:;" class="search icon-search"></a>
+			</div>
+			<!-- 主体 -->
+			<div class="body">
+				<!--<img src="./public/images/loading-50c5e3e79b.gif" class="loading" v-if="loading" alt="">-->
+                <router-view></router-view>
+			</div>
+		</div>
+	</div>
+</body>
+<script>
+    var navs=[
+        {text: '今日一刻', link: '/today', icon: 'icon-home'},
+		{text: '往期内容', link: '/older', icon: 'icon-file-empty'},
+		{text: '热门作者', link: '/author', icon: 'icon-pencil'},
+		{text: '栏目浏览', link: '/category', icon: 'icon-menu'},
+		{text: '我的喜欢', link: '/favourite', icon: 'icon-heart'},
+		{text: '设置', link: '/settings', icon: 'icon-cog'}
+		];
+
+	const today={
+        template:'<div class="item"><img src="./public/images/loading-50c5e3e79b.gif" class="loading" v-if="loading" alt=""><div class="mark" v-if="!loading">{{Con.date}}</div><ul class="posts large"><li v-for="post in Con.posts"><span href="javascript:;" class="tag" v-if="post.column.name">{{post.column.name}}</span><div class="cont"><h3>{{post.title}}</h3><div class="brief"><p v-bind:class="{only:(post.display_style == 10001)}" v-if="post.display_style!=10003">{{post.abstract}}</p><div class="thumb" v-if="post.display_style == 10002"><img alt="" v-bind:src="post.thumbs[0].small.url"></div><div class="gallery" v-if="post.display_style == 10003"><img alt="" v-bind:src="post.thumbs[0].small.url"></div></div></div></li></ul></div>',
+		data:function () {
+			return{
+			    Con:{},
+			    loading:true
+			}
+        },
+		created:function () {
+            var date = new Date();
+            var year = date.getFullYear();
+            var month = date.getMonth();
+            if (month >= 1 && month <= 9) {
+                month = "0" + month;
+            }
+            var day = date.getDate();
+            if (day >= 1 && day <= 9) {
+                day = "0" + day;
+            }
+            var today = year + "-" + (month+1) + "-" + day;
+            var self=this;
+            $.ajax({
+                type: 'get',
+                data: {today: today},
+                url: './api/today.php',
+                success: function (result) {
+                    self.Con=JSON.parse(result);
+                    self.loading=!self.loading;
+                }
+            });
+        }
+	};
+	const older={
+	    template:'<div class="item"><img src="./public/images/loading-50c5e3e79b.gif" class="loading" v-if="olderLoading" alt=""><div class="mark" v-if="!olderLoading">{{olderCon.date}}</div><ul class="posts"><li v-for="post in olderCon.posts"><span href="javascript:;" v-if="post.column.name" class="tag">{{post.column.name}}</span><div class="cont"><h3>{{post.title}}</h3><div class="brief"><p v-bind:class="{only:(post.display_style == 10001)}" v-if="post.display_style != 10003">{{post.abstract}}</p><div class="gallery" v-if="post.display_style == 10003"><div class="img-box" v-for="thumbs in post.thumbs"><img v-bind:src="thumbs.small.url" alt=""></div></div><div class="thumb" v-if="post.display_style == 10002"><img v-bind:src="post.thumbs[0].small.url" alt=""></div></div></div></li></ul></div>',
+		data:function () {
+			return{
+			    olderCon:{},
+				olderLoading:true
+			}
+        },
+		created:function () {
+			var self=this;
+			$.ajax({
+				type:'get',
+				url:'./api/older.php',
+				success:function (result) {
+                    self.olderCon=JSON.parse(result);
+                    console.log(self.olderCon);
+                    self.olderLoading=!self.olderLoading;
+                }
+			})
+        }
+	};
+	const author={
+	    template:'<dl class="author"><dt>本周推荐</dt><dd v-for="author in authorRec.authors"><div class="avatar"><img v-bind:src="author.avatar" alt=""></div><div class="info"><h5>{{author.name}}</h5><p>{{author.editor_notes}}</p></div></dd><dt>热门作者</dt><dd v-for="authorh in authorHot.authors"><div class="avatar"><img v-bind:src="authorh.avatar" alt=""></div><div class="info"><h5>{{authorh.name}}</h5><p>{{authorh.editor_notes}}</p></div></dd></dl>',
+		data:function () {
+			return{
+			    authorRec:{},
+				authorHot:{}
+			}
+        },
+		created:function () {
+			var self=this;
+			$.ajax({
+				url:"./api/author_rec.php",
+				type:'get',
+				success:function (result) {
+					self.authorRec=JSON.parse(result);
+					console.log(self.authorRec);
+                }
+			});
+			$.ajax({
+				url:"./api/author_hot.php",
+				type:'get',
+				success:function (result) {
+					self.authorHot=JSON.parse(result);
+					console.log(self.authorHot);
+                }
+			})
+        }
+	};
+	const category={
+	    template:'<ul class="category"><li><a href="javascript:;"><img src="./public/images/IMG_0269_07-1fd81a04ad.gif" alt=""><h5>热门精选</h5><p>收录“一刻”最受欢迎内容</p></a></li><li><a href="javascript:;"><img src="./public/images/IMG_0269_09-6a6b3ccc6e.gif" alt=""><h5>打鸡血</h5><p>每日段子，提神醒脑</p></a></li><li><a href="javascript:;"><img src="./public/images/IMG_0269_17-b590e7f7b2.gif" alt=""><h5>洗洗睡</h5><p>睡前静静，做个好梦</p></a></li><li><a href="javascript:;"><img src="./public/images/IMG_0269_19-968d1342b7.gif" alt=""><h5>爱美丽</h5><p>时尚穿衣护肤美发全搜罗</p></a></li><li><a href="javascript:;"><img src="./public/images/IMG_0269_27-480fb1f520.gif" alt=""><h5>闲翻书</h5><p>书里书外，感受阅读之美</p></a></li><li><a href="javascript:;"><img src="./public/images/IMG_0269_29-f87bbeea6a.gif" alt=""><h5>看电影</h5><p>推荐电影，分享影评</p></a></li><li><a href="javascript:;"><img src="./public/images/IMG_0269_37-9032cd2d45.gif" alt=""><h5>听音乐</h5><p>新砖好碟，乐史八卦</p></a></li><li>\<a href="javascript:;"><img src="./public/images/IMG_0269_39-359d9eb0ec.gif" alt=""><h5>聊艺术</h5><p>门槛其实没那么高</p></a></li><li><a href="javascript:;"><img src="./public/images/IMG_0269_47-3602aac4ea.gif" alt=""><h5>他们在聊什么</h5><p>回贴里面有精华</p></a></li><li><a href="javascript:;"><img src="./public/images/IMG_0269_49-7452ab79a2.gif" alt=""><h5>哈哈</h5><p>没心没肺笑一笑</p></a></li><li><a href="javascript:;"><img src="./public/images/IMG_0275_07-6cb3e5d6df.gif" alt=""><h5>假日厨房</h5><p>精选菜谱，享受假日生活</p></a></li><li><a href="javascript:;"><img src="./public/images/IMG_0275_09-4e3e075e4e.gif" alt=""><h5>食记</h5><p>舌尖上的时光</p></a></li><li><a href="javascript:;"><img src="./public/images/IMG_0275_17-fb662d1652.gif" alt=""><h5>玩手机</h5><p>新设备，新应用</p></a></li><li><a href="javascript:;"><img src="./public/images/IMG_0275_19-1ef3b229ae.gif" alt=""><h5>生活家</h5><p>你可以过的更精致</p></a></li><li><a href="javascript:;"><img src="./public/images/IMG_0275_27-43fdd1966e.gif" alt=""><h5>去远方</h5><p>旅行见闻，带你看远处风景</p></a></li><li><a href="javascript:;"><img src="./public/images/IMG_0275_29-59a0668b85.gif" alt=""><h5>海外志</h5><p>异国生活记录</p></a></li><li><a href="javascript:;"><img src="./public/images/IMG_0275_37-d7b4d3db8a.gif" alt=""><h5>冷知识</h5><p>不一定有用，但是有趣</p></a></li><li><a href="javascript:;"><img src="./public/images/IMG_0275_39-519339b56f.gif" alt=""><h5>萌</h5><p>维护世界和平，全靠卖萌</p></a></li><li><a href="javascript:;"><img src="./public/images/IMG_0275_47-1e17b10934.gif" alt=""><h5>连载</h5><p>精彩内容，分批装载</p></a></li><li><a href="javascript:;"><img src="./public/images/IMG_0275_49-668c2b3b5d.gif" alt=""><h5>鬼敲门</h5><p>其实没那么可怕</p></a></li></ul>'
+	};
+	const favourite={
+	    template:'<div class="item"><div class="mark">喜欢（2）</div><ul class="posts"><li><span href="javascript:;" class="tag">去远方</span><div class="cont"><h3>朝圣山南扎央宗--探索藏文化之源</h3><div class="brief"><div class="gallery"><div class="img-box"><img src="./public/images/post_3-0beda905da.png" alt=""></div><div class="img-box"><img src="./public/images/post_4-cd59d53b8b.png" alt=""></div><div class="img-box"><img src="./public/images/post_5-be8895201a.png" alt=""></div></div></div></div></li><li><span href="javascript:;" class="tag">去远方</span><div class="cont"><h3>朝圣山南扎央宗--探索藏文化之源探索藏文化之源探索藏文化之源</h3><div class="brief"><p>那里有个很窄的洞，钻进去曾是莲花生大师修行的地方，在藏民心中钻洞是为了洗清</p><div class="thumb"><img src="./public/images/post_1-0c815f7c1e.png" alt=""></div></div></div></li></ul></div>'
+	};
+	const settings={
+	    template:'<div class="settings"><ul><li>字体大小</li><li>WiFi下自动离线</li></ul><ul><li>绑定微博账号</li></ul><ul><li>清理缓存</li></ul><ul><li>意见反馈</li><li>关于</li></ul></div>'
+	}
+    const router=new VueRouter({
+        routes:[
+            {
+                path:'/today',
+                component:today
+            },
+			{
+			    path:"/",
+				component:today
+			},
+			{
+			  	path:'/older',
+				component:older,
+			},
+			{
+			  	path:'/author',
+				component:author
+			},
+			{
+			    path:'/category',
+				component:category
+			},
+			{
+			    path:'/favourite',
+				component:favourite
+			},
+			{
+			    path:'/settings',
+				component:settings
+			}
+        ]
+    });
+	const vm=new Vue({
+		el:"#app",
+		data:{
+		    navs:navs,
+            ifOpen:false,
+            title:"今日一刻",
+        },
+		mounted:function(){
+            var url=window.location.href;
+            var index=url.indexOf('#');
+            var name=url.substring(index+1);
+            for(var i=0;i<navs.length;i++){
+                if(name==navs[i].link){
+                    this.title=navs[i].text;
+				}
+			}
+		},
+		beforeUpdate:function () {
+            var url=window.location.href;
+            var index=url.indexOf('#');
+            var name=url.substring(index+1);
+            for(var i=0;i<navs.length;i++){
+                if(name==navs[i].link){
+                    this.title=navs[i].text;
+                }
+            }
+        },
+		methods:{
+		    togo:function () {
+				vm.ifOpen=!vm.ifOpen;
+                var arrs=document.querySelectorAll(".collapse");
+                var navs=document.querySelectorAll(".navs dd");
+                if(vm.ifOpen){
+                    for(var i=0; i<arrs.length;i++){
+                        arrs[i].style.transform="translate(12.8125rem)";
+                    }
+                    for(var i=0;i<navs.length;i++){
+                        navs[i].style.transform="translate(0)";
+                        navs[i].style.transitionDelay="0.2s";
+                        navs[i].style.transitionDuration = (i + 1) * 0.15 + 's';
+                    }
+                }
+                else{
+                    for(var i=0; i<arrs.length;i++){
+                        arrs[i].style.transform="translate(0)";
+                    }
+                    var len = navs.length - 1;
+                    for(var j=len; j>0; j--) {
+                        navs[j].style.transform = 'translate(-100%)';
+                        navs[j].style.transitionDelay = '';
+                        navs[j].style.transitionDuration = (len - j) * 0.15 + 's';
+                    }
+                }
+            },
+		},
+        router:router,
+
+	});
+
+
+
+</script>
+</html>
